@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
 # Dnspod.cn Domain api
 #
@@ -14,7 +14,7 @@ DP_Api="https://dnsapi.cn"
 ########  Public functions #####################
 
 #Usage: add  _acme-challenge.www.domain.com   "XKrxpRBosdIKFzxW_CT3KLZNf6q0HG9i01zxXp5CPBs"
-dns-dp-add() {
+dns_dp_add() {
   fulldomain=$1
   txtvalue=$2
   
@@ -71,7 +71,6 @@ existing_records() {
     
   if printf "$response" | grep "Action completed successful" >/dev/null ; then
     count=$(printf "$response" | grep '<type>TXT</type>' | wc -l)
-    
     record_id=$(printf "$response" | grep '^<id>' | tail -1 | cut -d '>' -f 2 | cut -d '<' -f 1)
     return 0    
   else
@@ -152,7 +151,7 @@ _get_root() {
       return 1
     fi
     
-    if printf "$response" | grep "Action completed successful" ; then
+    if printf "$response" | grep "Action completed successful" >/dev/null ; then
       _domain_id=$(printf "$response" | grep -o \"id\":\"[^\"]*\" | cut -d : -f 2 | tr -d \")
       _debug _domain_id "$_domain_id"
       if [ "$_domain_id" ] ; then
@@ -165,7 +164,7 @@ _get_root() {
       return 1
     fi
     p=$i
-    let "i+=1"
+    i=$(expr $i + 1)
   done
   return 1
 }
@@ -175,55 +174,25 @@ _get_root() {
 _rest() {
   m=$1
   ep="$2"
+  data="$3"
   _debug $ep
   url="$REST_API/$ep"
   
   _debug url "$url"
   
-  if [ "$3" ] ; then
-    data="$3"
-    _debug data "$data"
-    response="$(curl --silent -X $m "$url"  -d $data)"
+  if [ "$data" ] ; then
+    _debug2 data "$data"
+    response="$(_post $data "$url")"
   else
-    response="$(curl --silent -X $m "$url" )"
+    response="$(_get "$url")"
   fi
   
   if [ "$?" != "0" ] ; then
     _err "error $ep"
     return 1
   fi
-  _debug response "$response"
+  _debug2 response "$response"
   return 0
-}
-
-
-_debug() {
-
-  if [ -z "$DEBUG" ] ; then
-    return
-  fi
-  
-  if [ -z "$2" ] ; then
-    echo $1
-  else
-    echo "$1"="$2"
-  fi
-}
-
-_info() {
-  if [ -z "$2" ] ; then
-    echo "$1"
-  else
-    echo "$1"="$2"
-  fi
-}
-
-_err() {
-  if [ -z "$2" ] ; then
-    echo "$1" >&2
-  else
-    echo "$1"="$2" >&2
-  fi
 }
 
 
